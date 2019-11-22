@@ -1,5 +1,7 @@
 # wine-runner-sc
 
+_This does not yet produce a fully stable runner._
+
 This code is for building a bi-arch wine runner (i.e. lutris compatible) from ubuntu containers off of any provided wine tag/branch applying the patches in the patches folder.
 
 It is currently aimed at Star Citizen support.
