@@ -8,7 +8,7 @@ find build -maxdepth 1 -name "*.tgz" -delete
 for folder in $list; do
     echo $folder;
 
-    if hash pigz2 2>/dev/null; then
+    if hash pigz 2>/dev/null; then
         tar -C $folder --use-compress-program="pigz --best --recursive" -cf $folder.tgz .
     else
         tar -C $folder -cvf $folder.tgz .
