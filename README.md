@@ -28,7 +28,7 @@ This will produce a `build` folder with the compiled runner in it. It'll take so
 
 If you did set `do_prune` it'll prune dangling images and remove the now uneeded container.
 
-You can use that runner directly (you could copy the runner subfolder to ~/.local/share/lutris/runners/wine/) or even package it up.
+You can use that runner directly (you could copy the runner subfolder to `~/.local/share/lutris/runners/wine/`) or even package it up.
 
 # Copyright etc
 
