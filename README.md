@@ -7,9 +7,7 @@ It is currently aimed at Star Citizen support.
 ## Prerequisites
 
 1) Install docker. This is often in your package management system.
-
 2) Ensure you're in the docker group, e.g. `usermod -a -G docker yourusername`. User group changes usually require a logout/login to apply.
-
 3) (Optional) Install `pigz` for faster packaging if you need it.
 
 ## Usage
