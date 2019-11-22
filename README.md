@@ -16,6 +16,7 @@ It is currently aimed at Star Citizen support.
 - You can set `docker_args` for any additional docker build parameters you wish to set.
 - The Dockerfile handles `http_proxy` during the build if you should want to cache packages. e.g. `export docker_args='--build-arg http_proxy=http://127.0.0.1:3128'`
 - By default `build_cores` is set to `10` within the docker file, this is passed to make, e.g. `make -j10`. Adjust with `docker_args` if needed. e.g. `export docker_args='--build-arg build_cores=8'`
+  - In general it's recommended to set this to more than your core count as there will be I/O waits. Alternatively limit if you wish to use your machine for other things in the meantime.
 - If you want the (sizeable) dangling images and produced image removed after completion, use `export do_prune=yes`. (This will remove _all_ dangling images).
 
 ```
