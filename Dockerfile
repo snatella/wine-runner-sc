@@ -1,4 +1,5 @@
 FROM ubuntu:19.10 AS BUILD64
+ARG build_cores=10
 ARG wine_repo="https://github.com/wine-mirror/wine.git"
 ARG wine_branchprefix="wine-"
 ARG wine_version
@@ -25,9 +26,10 @@ RUN mkdir $HOME/wine64 \
     && mkdir $HOME/wine \
     && cd $HOME/wine64 \
     && ../wine-git/configure --enable-win64 --prefix=/root/wine-build-64/ \
-    && make -j10 install
+    && make -j${build_cores} install
 
 FROM i386/ubuntu:19.10 AS BUILD32
+ARG build_cores=10
 ARG wine_repo="https://github.com/wine-mirror/wine.git"
 ARG wine_branchprefix="wine-"
 ARG wine_version
@@ -49,9 +51,9 @@ COPY --from=BUILD64 /root/wine-build-64/ /root/wine-build-64/
 RUN mkdir $HOME/wine32-tools \
     && cd $HOME/wine32-tools \
     && ~/wine-git/configure  --prefix=/root/wine-build-32/ \
-    && make -j10 install
+    && make -j${build_cores} install
 
 RUN mkdir $HOME/wine32 \
     && cd $HOME/wine32 \
     && ~/wine-git/configure --with-wine64=$HOME/wine64 --with-wine-tools=$HOME/wine32-tools --prefix=/root/wine-build-32/ \
-    && make -j10 install
+    && make -j${build_cores} install
