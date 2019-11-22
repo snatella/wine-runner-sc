@@ -11,6 +11,6 @@ for folder in $list; do
     if hash pigz 2>/dev/null; then
         tar -C $folder --use-compress-program="pigz --best --recursive" -cf $folder.tgz .
     else
-        tar -C $folder -cvf $folder.tgz .
+        tar -C $folder -czf $folder.tgz .
     fi
 done
