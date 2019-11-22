@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# For you to build a bi-arch wine on ubuntu docker images. See README.md for more details.
+
 set -e
 
 if [[ "$wine_version" == "" ]]; then

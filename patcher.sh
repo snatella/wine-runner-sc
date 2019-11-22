@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Used by the dockerfile to apply patches
+
 set -e
 
 cd $HOME/wine-git

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# For you to use (optionally) if you wish to package your completed build in a tgz
+
 set -e
 
 list=$(find build -mindepth 1 -maxdepth 1 -type d)
