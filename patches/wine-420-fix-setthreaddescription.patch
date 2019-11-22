@@ -1,0 +1,11 @@
+--- wine-git/dlls/kernelbase/thread.c	2019-11-21 21:21:12.385447214 +0000
++++ ./thread.c	2019-11-21 21:35:28.101046975 +0000
+@@ -393,7 +393,7 @@
+ HRESULT WINAPI /* DECLSPEC_HOTPATCH */ SetThreadDescription( HANDLE thread, PCWSTR description )
+ {
+     FIXME( "(%p %s): stub\n", thread, debugstr_w( description ));
+-    return E_NOTIMPL;
++    return S_OK;
+ }
+ 
+ 
