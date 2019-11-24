@@ -24,11 +24,13 @@ docker rm -f lug-loader-$wine_version
 
 cd build \
     && mkdir wine-runner-$wine_version \
-    && cp -a wine32/* wine-runner-$wine_version/ \
     && cp -a wine64/* wine-runner-$wine_version/ \
+    && cp -a -n wine32/* wine-runner-$wine_version/ \
     && rm -rf wine32 && rm -rf wine64
 
 if [[ "$do_prune" == "yes" ]]; then
     docker image prune -f
     docker rmi lug-runner:$wine_version
 fi
+
+echo "build/wine-runner-$wine_version created"

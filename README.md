@@ -1,8 +1,10 @@
 # wine-runner-sc
 
-_This does not yet produce a fully stable runner._
+_This not appears to produce a stable runner._
 
 This code is for building a bi-arch wine runner (i.e. lutris compatible) from ubuntu containers off of any provided wine tag/branch applying the patches in the patches folder.
+
+It will also apply some wine staging patches as per `patcher.sh`.
 
 It is currently aimed at Star Citizen support.
 
@@ -20,6 +22,7 @@ It is currently aimed at Star Citizen support.
 - By default `build_cores` is set to `10` within the docker file, this is passed to make, e.g. `make -j10`. Adjust with `docker_args` if needed. e.g. `export docker_args='--build-arg build_cores=8'`
   - In general it's recommended to set this to more than your core count as there will be I/O waits. Alternatively limit if you wish to use your machine for other things during builds.
 - If you want the (sizeable) dangling images and produced image removed after completion, use `export do_prune=yes`. (This will remove _all_ dangling images).
+- `do_wine_staging` is by default set to "yes" and with `wine_staging_version` set to a working version. `patcher.sh` specifies which patches will be loaded.
 
 ```
 export wine_version=4.20 # or your preferred version
