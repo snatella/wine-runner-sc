@@ -1,6 +1,6 @@
 # wine-runner-sc
 
-_This not appears to produce a stable runner._
+_This now appears to produce a stable runner._
 
 This code is for building a bi-arch wine runner (i.e. lutris compatible) from ubuntu containers off of any provided wine tag/branch applying the patches in the patches folder.
 
