@@ -2,9 +2,9 @@ FROM ubuntu:19.10 AS BUILD64
 ARG build_cores=10
 ARG wine_repo="https://github.com/wine-mirror/wine.git"
 ARG wine_branchprefix="wine-"
-ARG wine_version="4.20"
+ARG wine_version="4.21"
 ARG do_wine_staging="yes"
-ARG wine_staging_version="a9639c412f1b01dbaa931531d95611881d6ff2bf"
+ARG wine_staging_version="9be789b28998243009d0084ab1647cf50c8f8688"
 ARG http_proxy
 ENV http_proxy=${http_proxy}
 ENV https_proxy=${http_proxy}
