@@ -4,7 +4,7 @@
 
 set -e
 
-staging_list='wined3d* d3d11* d3dx9* dinput*'
+staging_list='wined3d* d3d11* d3dx9* dinput* ntdll-Dealloc_Thread_Stack ntdll-RtlCreateUserThread ntdll-Threading ntdll-ThreadTime server-Signal_Thread winex11-ime-check-thread-data'
 # For specifying which wine staging patches to apply. Wildcards are expanded.
 
 do_wine_staging=$1
@@ -25,12 +25,13 @@ if [[ "$do_wine_staging" == "yes" ]]; then
         patchlist="$patchlist $(cd patches && echo $match)"
     done
 
+    echo "./patches/patchinstall.sh DESTDIR=~/wine-git --force-autoconf $patchlist"
     ./patches/patchinstall.sh DESTDIR=~/wine-git --force-autoconf $patchlist
 fi
 
 cd $HOME/wine-git
 
-for file in $(ls ../patches/); do
+for file in $(ls ../patches/*.patch 2> /dev/null || true); do
     echo "Applying $file"
     patch -l -p1 <../patches/$file
 done
