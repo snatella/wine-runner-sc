@@ -28,6 +28,9 @@ The builder currently uses Ubuntu 19.10 containers, so older distros can struggl
 
 `build` can become quite large over time, especially the `ccache` subfolders which are deliberately unrestricted in size. `ccache` is cached compiled objects to make running `build-wine.sh` faster for future runs, it can be cleared but note build times will suffer.
 
+
+If you encounter `wine-builder*` is already running errors, use `docker kill ${container_name}` to stop it and `docker rm ${container_name}` to remove it. `docker ps --all` will tell you what containers are running/configured.
+
 ### Environment variables
 
 These should be set with export, e.g.
