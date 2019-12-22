@@ -30,10 +30,10 @@ set -x
 
 docker run --rm -t -v $DIR/build:/build --env build_cores=$build_cores --name wine-builder64 wine-builder64:latest ./build64.sh $wine_version
 
-docker run --rm -t -v $DIR/build:/build --name wine-builder64 wine-builder64:latest /usr/bin/chown -R $UID:$UID /build/
+docker run --rm -t -v $DIR/build:/build --name wine-builder64 wine-builder64:latest chown -R $UID:$UID /build/
 
 docker run --rm -t -v $DIR/build:/build --env build_cores=$build_cores --name wine-builder32 wine-builder32:latest ./build32.sh $wine_version
 
-docker run --rm -t -v $DIR/build:/build --name wine-builder32 wine-builder32:latest /usr/bin/chown -R $UID:$UID /build/
+docker run --rm -t -v $DIR/build:/build --name wine-builder32 wine-builder32:latest chown -R $UID:$UID /build/
 
 echo "Build complete in $DIR/build/wine-runner-$wine_version"

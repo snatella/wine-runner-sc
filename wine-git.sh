@@ -46,7 +46,7 @@ if [[ "$do_wine_staging" == "yes" ]]; then
     set -x
     docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest /build/wine-staging/patches/patchinstall.sh DESTDIR=/build/wine-git/ --force-autoconf $patchlist
 
-    docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest /usr/bin/chown -R $UID:$UID /build/
+    docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest chown -R $UID:$UID /build/
     set +x
 
     echo "Fixed permissions in $DIR/build"
