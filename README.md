@@ -10,6 +10,8 @@ This is version 2 - hugely rewritten to avoid as much rebuilding and recompilati
 
 The builder currently uses Ubuntu 19.10 containers, so older distros can struggle with binary incompatibilities with the produced runners. You could try other debian based distros by editing the Dockerfiles but these are not tested - your milage will vary.
 
+_There is a `18.04-dockerfile` branch which appears to produce a working runner based on Ubuntu 18.04 for greater compatibility, it will be merged into master in the near future._
+
 ## Prerequisites
 
 1) Install docker. This is often in your package management system.
