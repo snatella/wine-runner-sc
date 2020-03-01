@@ -8,7 +8,7 @@ It is currently aimed at Star Citizen support, but will most likely support othe
 
 This is version 2 - hugely rewritten to avoid as much rebuilding and recompilation as possible. Containers are built, wine sources downloaded (and patched if necessary) and then compiled (with ccache so recompiles are much less painful) into a runner. You could then package and release the runner.
 
-The builder currently uses Ubuntu 19.10 containers, so older distros can struggle with binary incompatibilities with the produced runners. You could try other debian based distros by editing the Dockerfiles but these are not tested - your milage will vary.
+The builder currently uses Ubuntu 18.04 containers, this is so we can achieve the greatest distro compatibility. You can of course change the Dockerfiles to use a newer Ubuntu base image and get newer libraries, but you may find that older distros will struggle to run it.
 
 ## Prerequisites
 
@@ -36,13 +36,13 @@ If you encounter `wine-builder*` is already running errors, use `docker kill ${c
 These should be set with export, e.g.
 
 ```
-export wine_version=4.21
+export wine_version=5.2
 export do_wine_staging=yes
 ```
 
 #### Required
 
-- `wine_version`: MUST be set to a wine version like 4.21 - see tags on wine sources for valid examples. The `wine-` is added in for you.
+- `wine_version`: MUST be set to a wine version like 5.2 - see tags on wine sources for valid examples. The `wine-` is added in for you.
 
 #### Recommended
 
