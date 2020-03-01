@@ -10,7 +10,7 @@ This is version 2 - hugely rewritten to avoid as much rebuilding and recompilati
 
 The builder currently uses Ubuntu 18.04 containers, this is so we can achieve the greatest distro compatibility. You can of course change the Dockerfiles to use a newer Ubuntu base image and get newer libraries, but you may find that older distros will struggle to run it.
 
-_There is a `18.04-dockerfile` branch which appears to produce a working runner based on Ubuntu 18.04 for greater compatibility, it will be merged into master in the near future._
+_There is a `19.10-dockerfile` branch which produces a runner based on Ubuntu 19.10 for newer libraries._
 
 ## Prerequisites
 
