@@ -8,9 +8,7 @@ It is currently aimed at Star Citizen support, but will most likely support othe
 
 This is version 2 - hugely rewritten to avoid as much rebuilding and recompilation as possible. Containers are built, wine sources downloaded (and patched if necessary) and then compiled (with ccache so recompiles are much less painful) into a runner. You could then package and release the runner.
 
-The builder currently uses Ubuntu 18.04 containers, this is so we can achieve the greatest distro compatibility. You can of course change the Dockerfiles to use a newer Ubuntu base image and get newer libraries, but you may find that older distros will struggle to run it.
-
-_There is a `19.10-dockerfile` branch which produces a runner based on Ubuntu 19.10 for newer libraries._
+This version of the builder currently uses Ubuntu 19.10 containers, so older distros can struggle with binary incompatibilities with the produced runners.
 
 ## Prerequisites
 
