@@ -28,12 +28,15 @@ if [[ "$do_wine_staging" == "yes" ]]; then
     echo "Doing wine staging"
     if [[ "$wine_staging_list" == "" ]]; then
         echo "with default patch list (did you mean to set one with wine_staging_list?)"
-        #wine_staging_list='wined3d* d3d11* dinput* ntdll-Dealloc_Thread_Stack ntdll-RtlCreateUserThread ntdll-Threading ntdll-ThreadTime server-Signal_Thread winex11-ime-check-thread-data'
         wine_staging_list="all"
     fi
 
     echo "Cloning wine staging from git"
-    git clone --depth 1 --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
+    if [[ "$wine_staging_version" != "" ]]; then
+        git clone --depth 1 --branch ${wine_staging_version} ${wine_staging_repo} $DIR/build/wine-staging
+    else
+        git clone --depth 1 --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
+    fi
 
     cd $DIR/build/wine-staging
 
@@ -72,7 +75,11 @@ echo "Wine $wine_version ready for build"
 
 if [[ "$do_wine_staging" == "yes" ]]; then
     echo "... with staging '$wine_staging_list'"
-    echo "... which expanded to '$patchlist'"
+    if [[ "$wine_staging_list" == "all" ]] || [[ "$wine_staging_list" == "*" ]]; then
+        echo "... which is ALL patches"
+    else
+        echo "... which expanded to '$patchlist'"
+    fi
 else
     echo "... without staging"
 fi
