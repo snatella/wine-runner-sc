@@ -28,23 +28,34 @@ if [[ "$do_wine_staging" == "yes" ]]; then
     echo "Doing wine staging"
     if [[ "$wine_staging_list" == "" ]]; then
         echo "with default patch list (did you mean to set one with wine_staging_list?)"
-        wine_staging_list='wined3d* d3d11* d3dx9* dinput* ntdll-Dealloc_Thread_Stack ntdll-RtlCreateUserThread ntdll-Threading ntdll-ThreadTime server-Signal_Thread winex11-ime-check-thread-data'
+        wine_staging_list="all"
     fi
 
-    git clone --depth 1 --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
+    echo "Cloning wine staging from git"
+    if [[ "$wine_staging_version" != "" ]]; then
+        git clone --depth 1 --branch ${wine_staging_version} ${wine_staging_repo} $DIR/build/wine-staging
+    else
+        git clone --depth 1 --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
+    fi
 
     cd $DIR/build/wine-staging
 
-    patchlist=""
+    if [[ "$wine_staging_list" == "all" ]] || [[ "$wine_staging_list" == "*" ]]; then
+        echo "Installing ALL wine staging patches"
+        set -x
+        docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest /build/wine-staging/patches/patchinstall.sh DESTDIR=/build/wine-git/ --force-autoconf --all
+    else
+        patchlist=""
 
-    echo "Expanding patch list expansions..."
-    for match in $wine_staging_list; do
-        patchlist="$patchlist $(cd patches && echo $match)"
-    done
+        echo "Expanding patch list expansions..."
+        for match in $wine_staging_list; do
+            patchlist="$patchlist $(cd patches && echo $match)"
+        done
 
-    echo "Run patcher (in container)"
-    set -x
-    docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest /build/wine-staging/patches/patchinstall.sh DESTDIR=/build/wine-git/ --force-autoconf $patchlist
+        echo "Run patcher (in container)"
+        set -x
+        docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest /build/wine-staging/patches/patchinstall.sh DESTDIR=/build/wine-git/ --force-autoconf $patchlist
+    fi
 
     docker run --rm -t -v $DIR/build:/build --name wine-builder-patcher wine-builder64:latest chown -R $UID:$UID /build/
     set +x
@@ -60,4 +71,15 @@ for file in $(ls $DIR/patches/*.patch 2> /dev/null || true); do
     patch -l -p1 < $file
 done
 
-echo "Wine git ready for build"
+echo "Wine $wine_version ready for build"
+
+if [[ "$do_wine_staging" == "yes" ]]; then
+    echo "... with staging '$wine_staging_list'"
+    if [[ "$wine_staging_list" == "all" ]] || [[ "$wine_staging_list" == "*" ]]; then
+        echo "... which is ALL patches"
+    else
+        echo "... which expanded to '$patchlist'"
+    fi
+else
+    echo "... without staging"
+fi
