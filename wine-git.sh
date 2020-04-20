@@ -11,6 +11,15 @@ if [[ "$wine_version" == "" ]]; then
     exit 1
 fi
 
+if [[ "$no_limit_depth" == "yes" ]]; then
+    echo "Not limiting depth - beware, checkout will be slow."
+    checkout_depth=""
+elif [[ "$limit_depth" != "" ]]; then
+    checkout_depth="--depth $limit_depth"
+else
+    checkout_depth="--depth 1"
+fi
+
 if [[ "$http_proxy" != "" ]]; then
     git config --global http.proxy $http_proxy
 fi
@@ -22,7 +31,11 @@ rm -rf $DIR/build/data64/{build,wine-cfg}
 rm -rf $DIR/build/data32/{build,wine-cfg,wine-tools}
 
 echo "Cloning wine from git"
-git clone --depth 1 --branch wine-${wine_version} ${wine_repo} $DIR/build/wine-git
+if [[ "$wine_version" == "master" ]]; then
+    git clone $checkout_depth --branch master ${wine_repo} $DIR/build/wine-git
+else
+    git clone $checkout_depth --branch wine-${wine_version} ${wine_repo} $DIR/build/wine-git
+fi
 
 if [[ "$do_wine_staging" == "yes" ]]; then
     echo "Doing wine staging"
@@ -33,9 +46,9 @@ if [[ "$do_wine_staging" == "yes" ]]; then
 
     echo "Cloning wine staging from git"
     if [[ "$wine_staging_version" != "" ]]; then
-        git clone --depth 1 --branch ${wine_staging_version} ${wine_staging_repo} $DIR/build/wine-staging
+        git clone $checkout_depth --branch ${wine_staging_version} ${wine_staging_repo} $DIR/build/wine-staging
     else
-        git clone --depth 1 --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
+        git clone $checkout_depth --branch v${wine_version} ${wine_staging_repo} $DIR/build/wine-staging
     fi
 
     cd $DIR/build/wine-staging
