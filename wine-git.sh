@@ -20,9 +20,9 @@ else
     checkout_depth="--depth 1"
 fi
 
-if [[ "$http_proxy" != "" ]]; then
-    git config --global http.proxy $http_proxy
-fi
+#if [[ "$http_proxy" != "" ]]; then
+#    git config --global http.proxy $http_proxy
+#fi
 
 echo "Clearing previous"
 rm -rf $DIR/build/wine-git/
