@@ -11,11 +11,15 @@ if [[ "$http_proxy" != "" ]]; then
     export build_args="--build-arg http_proxy=$http_proxy --build-arg https_proxy=$http_proxy"
 fi
 
-echo "Building 64bit Ubuntu Wine builder"
-docker build --pull --rm --tag wine-builder64:latest $build_args -f Dockerfile.64bit .
+if [[ "$do_amd64_build" != "no" ]]; then
+    echo "Building 64bit Ubuntu Wine builder"
+    docker build --pull --rm --tag wine-builder64:latest $build_args -f Dockerfile.64bit .
+fi
 
-echo "Building 32bit Ubuntu Wine builder"
-docker build --pull --rm --tag wine-builder32:latest $build_args -f Dockerfile.32bit .
+if [[ "$do_i386_build" == "yes" ]]; then
+    echo "Building 32bit Ubuntu Wine builder"
+    docker build --pull --rm --tag wine-builder32:latest $build_args -f Dockerfile.32bit .
+fi
 
 if [[ "$do_prune" == "yes" ]]; then
     echo "Clearing up any intermediates"
