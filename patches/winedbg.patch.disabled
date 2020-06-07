@@ -1,0 +1,13 @@
+diff --git a/programs/winedbg/winedbg.c b/programs/winedbg/winedbg.c
+index 11782fe..46ee4ce 100644
+--- a/programs/winedbg/winedbg.c
++++ b/programs/winedbg/winedbg.c
+@@ -115,7 +115,7 @@ static void dbg_outputA(const char* buffer, int len)
+             if (len > 0) i = line_pos;  /* buffer is full, flush anyway */
+             else break;
+         }
+-        WriteFile(dbg_houtput, line_buff, i, &w, NULL);
++        wine_dbg_printf("%.*s", i, line_buff);
+         memmove( line_buff, line_buff + i, line_pos - i );
+         line_pos -= i;
+     }

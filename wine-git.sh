@@ -79,10 +79,24 @@ fi
 echo "Checking for/applying local patches"
 cd $DIR/build/wine-git
 
-for file in $(ls $DIR/patches/*.patch 2> /dev/null || true); do
-    echo "Applying $file"
-    patch -l -p1 < $file
-done
+do_patches() {
+    local dir="$1"
+
+    for file in $(ls $dir/*.patch 2> /dev/null || true); do
+        echo "Applying $file"
+        patch -l -p1 < $file
+    done
+}
+
+if [[ -e "$DIR/patches/$wine_version/staging" ]] && [[ "$do_wine_staging" == "yes" ]]; then
+    echo "Found staging patch folder"
+    do_patches "$DIR/patches/$wine_version/staging"
+elif [[ -e "$DIR/patches/$wine_version" ]]; then
+    echo "Found patch folder"
+    do_patches "$DIR/patches/$wine_version"
+else
+    echo "No patches found for $wine_version";
+fi
 
 echo "Wine $wine_version ready for build"
 

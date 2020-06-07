@@ -16,7 +16,7 @@ if [[ "$do_amd64_build" != "no" ]]; then
     docker build --pull --rm --tag wine-builder64:latest $build_args -f Dockerfile.64bit .
 fi
 
-if [[ "$do_i386_build" == "yes" ]]; then
+if [[ "$do_i386_build" != "no" ]]; then
     echo "Building 32bit Ubuntu Wine builder"
     docker build --pull --rm --tag wine-builder32:latest $build_args -f Dockerfile.32bit .
 fi

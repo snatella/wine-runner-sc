@@ -1,0 +1,227 @@
+--- b/dlls/ntdll/loader.c
++++ a/dlls/ntdll/loader.c
+@@ -599,27 +599,6 @@
+ }
+ 
+ 
+-/*************************************************************************
+- *		grow_module_deps
+- */
+-static WINE_MODREF **grow_module_deps( WINE_MODREF *wm, int count )
+-{
+-    WINE_MODREF **deps;
+-
+-    if (wm->alloc_deps)
+-        deps = RtlReAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, wm->deps,
+-                                  (wm->alloc_deps + count) * sizeof(*deps) );
+-    else
+-        deps = RtlAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, count * sizeof(*deps) );
+-
+-    if (deps)
+-    {
+-        wm->deps = deps;
+-        wm->alloc_deps += count;
+-    }
+-    return deps;
+-}
+-
+ /*************************************************************************
+  *		find_forwarded_export
+  *
+@@ -653,8 +632,18 @@
+         {
+             if (!imports_fixup_done && current_modref)
+             {
++                WINE_MODREF **deps;
++                if (current_modref->alloc_deps)
++                    deps = RtlReAllocateHeap( GetProcessHeap(), 0, current_modref->deps,
++                                              (current_modref->alloc_deps + 1) * sizeof(*deps) );
++                else
++                    deps = RtlAllocateHeap( GetProcessHeap(), 0, sizeof(*deps) );
++                if (deps)
++                {
++                    deps[current_modref->nDeps++] = wm;
++                    current_modref->deps = deps;
++                    current_modref->alloc_deps++;
++                }
+-                WINE_MODREF **deps = grow_module_deps( current_modref, 1 );
+-                if (deps) deps[current_modref->nDeps++] = wm;
+             }
+             else if (process_attach( wm, NULL ) != STATUS_SUCCESS)
+             {
+@@ -1098,8 +1087,9 @@
+     if (!(wm->ldr.Flags & LDR_DONT_RESOLVE_REFS)) return STATUS_SUCCESS;  /* already done */
+     wm->ldr.Flags &= ~LDR_DONT_RESOLVE_REFS;
+ 
+-    if (!grow_module_deps( wm, 1 )) return STATUS_NO_MEMORY;
+     wm->nDeps = 1;
++    wm->alloc_deps = 1;
++    wm->deps  = RtlAllocateHeap( GetProcessHeap(), 0, sizeof(WINE_MODREF *) );
+ 
+     prev = current_modref;
+     current_modref = wm;
+@@ -1154,11 +1144,14 @@
+     while (imports[nb_imports].Name && imports[nb_imports].FirstThunk) nb_imports++;
+ 
+     if (!nb_imports) return STATUS_SUCCESS;  /* no imports */
+-    if (!grow_module_deps( wm, nb_imports )) return STATUS_NO_MEMORY;
+ 
+     if (!create_module_activation_context( &wm->ldr ))
+         RtlActivateActivationContext( 0, wm->ldr.ActivationContext, &cookie );
+ 
++    /* Allocate module dependency list */
++    wm->alloc_deps = nb_imports;
++    wm->deps  = RtlAllocateHeap( GetProcessHeap(), 0, nb_imports*sizeof(WINE_MODREF *) );
++
+     /* load the imported modules. They are automatically
+      * added to the modref list of the process.
+      */
+--- b/dlls/ntdll/loader.c
++++ a/dlls/ntdll/loader.c
+@@ -2058,14 +2058,21 @@
+  */
+ static void load_builtin_callback( void *module, const char *filename )
+ {
++    static const WCHAR emptyW[1];
++    const WCHAR *load_path;
++
+     if (!module)
+     {
+         ERR("could not map image for %s\n", debugstr_us(builtin_load_info->filename) );
+         builtin_load_info->status = STATUS_NO_MEMORY;
+         return;
+     }
++
++    load_path = builtin_load_info->load_path;
++    if (!load_path) load_path = NtCurrentTeb()->Peb->ProcessParameters->DllPath.Buffer;
++    if (!load_path) load_path = emptyW;
++
++    builtin_load_info->status = build_so_dll_module( load_path, builtin_load_info->filename, module,
+-    builtin_load_info->status = build_so_dll_module( builtin_load_info->load_path,
+-                                                     builtin_load_info->filename, module,
+                                                      0, &builtin_load_info->wm );
+ }
+ 
+@@ -4475,7 +4482,7 @@
+     NTSTATUS status;
+     ANSI_STRING func_name;
+     UNICODE_STRING nt_name;
++    HMODULE ntdll_module;
+-    HMODULE ntdll_module = (HMODULE)((__wine_spec_nt_header.OptionalHeader.ImageBase + 0xffff) & ~0xffff);
+     INITIAL_TEB stack;
+     BOOL suspend;
+     SIZE_T info_size;
+@@ -4505,10 +4512,15 @@
+ 
+     /* setup the load callback and create ntdll modref */
+     RtlInitUnicodeString( &nt_name, ntdllW );
++    default_load_info.filename = &nt_name;
+-    status = build_so_dll_module( params->DllPath.Buffer, &nt_name, ntdll_module, 0, &wm );
+-    assert( !status );
+-
+     wine_dll_set_callback( load_builtin_callback );
++    ntdll_module = (HMODULE)((__wine_spec_nt_header.OptionalHeader.ImageBase + 0xffff) & ~0xffff);
++    if (!get_modref( ntdll_module ))
++    {
++        /* map_so_dll( &__wine_spec_nt_header, ntdll_module ); */
++        status = build_so_dll_module( params->DllPath.Buffer, &nt_name, ntdll_module, 0, &wm );
++        assert( !status );
++    }
+ 
+     RtlInitUnicodeString( &nt_name, kernel32W );
+     if ((status = load_builtin_dll( params->DllPath.Buffer, &nt_name, NULL, 0, &wm )) != STATUS_SUCCESS)
+--- b/dlls/ntdll/loader.c
++++ a/dlls/ntdll/loader.c
+@@ -4028,7 +4028,6 @@
+         }
+         attach_implicitly_loaded_dlls( context );
+         virtual_release_address_space();
+-        if (wm->ldr.TlsIndex != -1) call_tls_callbacks( wm->ldr.DllBase, DLL_PROCESS_ATTACH );
+         if (wm->so_handle) call_constructors( wm );
+         if (wm->ldr.ActivationContext) RtlDeactivateActivationContext( 0, cookie );
+     }
+--- b/dlls/ntdll/loader.c
++++ a/dlls/ntdll/loader.c
+@@ -1191,7 +1191,7 @@
+     else p = wm->ldr.FullDllName.Buffer;
+     RtlInitUnicodeString( &wm->ldr.BaseDllName, p );
+ 
++    if (!(nt->FileHeader.Characteristics & IMAGE_FILE_DLL) || !is_dll_native_subsystem( &wm->ldr, nt, p ))
+-    if (!is_dll_native_subsystem( &wm->ldr, nt, p ))
+     {
+         if (nt->FileHeader.Characteristics & IMAGE_FILE_DLL)
+             wm->ldr.Flags |= LDR_IMAGE_IS_DLL;
+@@ -1311,7 +1311,7 @@
+     if (wm->ldr.Flags & LDR_DONT_RESOLVE_REFS) return STATUS_SUCCESS;
+     if (wm->ldr.TlsIndex != -1) call_tls_callbacks( wm->ldr.BaseAddress, reason );
+     if (wm->so_handle && reason == DLL_PROCESS_ATTACH) call_constructors( wm );
++    if (!entry || !(wm->ldr.Flags & LDR_IMAGE_IS_DLL)) return STATUS_SUCCESS;
+-    if (!entry) return STATUS_SUCCESS;
+ 
+     if (TRACE_ON(relay))
+     {
+@@ -1463,7 +1463,6 @@
+         {
+             LDR_MODULE *mod = CONTAINING_RECORD(entry, LDR_MODULE, InLoadOrderModuleList);
+ 
+-            if (!(mod->Flags & LDR_IMAGE_IS_DLL)) continue;
+             if (mod->Flags & (LDR_LOAD_IN_PROGRESS | LDR_PROCESS_ATTACHED)) continue;
+             TRACE( "found implicitly loaded %s, attaching to it\n",
+                    debugstr_w(mod->BaseDllName.Buffer));
+@@ -3741,10 +3740,7 @@
+ void WINAPI LdrInitializeThunk( CONTEXT *context, void **entry, ULONG_PTR unknown3, ULONG_PTR unknown4 )
+ {
+     static const LARGE_INTEGER zero;
+-    static int attach_done;
+-    int i;
+     NTSTATUS status;
+-    ULONG_PTR cookie;
+     WINE_MODREF *wm;
+     LPCWSTR load_path = NtCurrentTeb()->Peb->ProcessParameters->DllPath.Buffer;
+ 
+@@ -3778,37 +3774,26 @@
+     InsertHeadList( &tls_links, &NtCurrentTeb()->TlsLinks );
+     RtlReleasePebLock();
+ 
++    if (!(wm->ldr.Flags & LDR_PROCESS_ATTACHED))  /* first time around */
+-    if (!attach_done)  /* first time around */
+     {
+-        attach_done = 1;
+         if ((status = alloc_thread_tls()) != STATUS_SUCCESS)
+         {
+             ERR( "TLS init  failed when loading %s, status %x\n",
+                  debugstr_w(NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer), status );
+             NtTerminateProcess( GetCurrentProcess(), status );
+         }
++        if ((status = process_attach( wm, context )) != STATUS_SUCCESS)
+-        wm->ldr.LoadCount = -1;
+-        wm->ldr.Flags |= LDR_PROCESS_ATTACHED;  /* don't try to attach again */
+-        if (wm->ldr.ActivationContext)
+-            RtlActivateActivationContext( 0, wm->ldr.ActivationContext, &cookie );
+-
+-        for (i = 0; i < wm->nDeps; i++)
+         {
++            if (last_failed_modref)
++                ERR( "%s failed to initialize, aborting\n",
++                     debugstr_w(last_failed_modref->ldr.BaseDllName.Buffer) + 1 );
++            ERR( "Initializing dlls for %s failed, status %x\n",
++                 debugstr_w(NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer), status );
++            NtTerminateProcess( GetCurrentProcess(), status );
+-            if (!wm->deps[i]) continue;
+-            if ((status = process_attach( wm->deps[i], context )) != STATUS_SUCCESS)
+-            {
+-                if (last_failed_modref)
+-                    ERR( "%s failed to initialize, aborting\n",
+-                         debugstr_w(last_failed_modref->ldr.BaseDllName.Buffer) + 1 );
+-                ERR( "Initializing dlls for %s failed, status %x\n",
+-                     debugstr_w(NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer), status );
+-                NtTerminateProcess( GetCurrentProcess(), status );
+-            }
+         }
+         attach_implicitly_loaded_dlls( context );
+         virtual_release_address_space();
+         if (wm->so_handle) call_constructors( wm );
+-        if (wm->ldr.ActivationContext) RtlDeactivateActivationContext( 0, cookie );
+     }
+     else
+     {

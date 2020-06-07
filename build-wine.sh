@@ -46,7 +46,7 @@ if [[ "$do_amd64_build" != "no" ]]; then
     docker run --rm -t -v $DIR/build:/build --name wine-builder64 wine-builder64:latest chown -R $UID:$UID /build/
 fi
 
-if [[ "$do_i386_build" == "yes" ]]; then
+if [[ "$do_i386_build" != "no" ]]; then
     echo "docker run --rm -t -v $DIR/build:/build --env build_cores=$build_cores --name wine-builder32 wine-builder32:latest ./build32.sh $wine_version"
     docker run --rm -t -v $DIR/build:/build --env build_cores=$build_cores --name wine-builder32 wine-builder32:latest ./build32.sh $wine_version
 
