@@ -2,6 +2,8 @@
 
 _Most users will just want to download a runner from the releases. The rest of this document covers running the wine runner builder._
 
+_https://hub.docker.com/r/molotovsh/wine-builder-ubuntu will soon replace most/all of this codebase for building wine runners_
+
 This code is for building a bi-arch wine runner (i.e. lutris compatible) via Ubuntu containers.
 
 It is currently aimed at Star Citizen support, but will most likely support other games (and hopefully make it easier to do so).
