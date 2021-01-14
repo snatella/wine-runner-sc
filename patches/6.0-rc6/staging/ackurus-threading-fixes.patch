@@ -1,0 +1,149 @@
+diff --unified --recursive --text wine/dlls/ntdll/error.c wine.new2/dlls/ntdll/error.c
+--- wine/dlls/ntdll/error.c	2021-01-07 00:48:15.917132396 -0500
++++ wine.new2/dlls/ntdll/error.c	2021-01-06 14:28:17.636157677 -0500
+@@ -475,7 +475,7 @@
+     ERROR_INVALID_PARAMETER,                           /* c0000048 (STATUS_PORT_ALREADY_SET) */
+     ERROR_INVALID_PARAMETER,                           /* c0000049 (STATUS_SECTION_NOT_IMAGE) */
+     ERROR_SIGNAL_REFUSED,                              /* c000004a (STATUS_SUSPEND_COUNT_EXCEEDED) */
+-    ERROR_ACCESS_DENIED,                               /* c000004b (STATUS_THREAD_IS_TERMINATING) */
++    ERROR_GEN_FAILURE,                                 /* c000004b (STATUS_THREAD_IS_TERMINATING) */
+     ERROR_INVALID_PARAMETER,                           /* c000004c (STATUS_BAD_WORKING_SET_LIMIT) */
+     ERROR_INVALID_PARAMETER,                           /* c000004d (STATUS_INCOMPATIBLE_FILE_MAP) */
+     ERROR_INVALID_PARAMETER,                           /* c000004e (STATUS_SECTION_PROTECTION) */
+diff --unified --recursive --text wine/dlls/ntdll/make_errors wine.new2/dlls/ntdll/make_errors
+--- wine/dlls/ntdll/make_errors	2021-01-07 00:48:15.920132395 -0500
++++ wine.new2/dlls/ntdll/make_errors	2021-01-06 14:28:17.636157677 -0500
+@@ -307,7 +307,7 @@
+     STATUS_PORT_ALREADY_SET                             ERROR_INVALID_PARAMETER
+     STATUS_SECTION_NOT_IMAGE                            ERROR_INVALID_PARAMETER
+     STATUS_SUSPEND_COUNT_EXCEEDED                       ERROR_SIGNAL_REFUSED
+-    STATUS_THREAD_IS_TERMINATING                        ERROR_ACCESS_DENIED
++    STATUS_THREAD_IS_TERMINATING                        ERROR_GEN_FAILURE
+     STATUS_BAD_WORKING_SET_LIMIT                        ERROR_INVALID_PARAMETER
+     STATUS_INCOMPATIBLE_FILE_MAP                        ERROR_INVALID_PARAMETER
+     STATUS_SECTION_PROTECTION                           ERROR_INVALID_PARAMETER
+Only in wine.new2: .git
+diff --unified --recursive --text wine/server/thread.c wine.new2/server/thread.c
+--- wine/server/thread.c	2021-01-07 00:48:16.741132351 -0500
++++ wine.new2/server/thread.c	2021-01-06 16:10:24.697824086 -0500
+@@ -388,7 +388,8 @@
+ 
+     if (thread->context)
+     {
+-        thread->context->status = STATUS_ACCESS_DENIED;
++        thread->context->status = STATUS_THREAD_IS_TERMINATING;
++        set_error( STATUS_THREAD_IS_TERMINATING ); /* Maybe remove */
+         wake_up( &thread->context->obj, 0 );
+         release_object( thread->context );
+         thread->context = NULL;
+@@ -427,6 +428,7 @@
+ static void destroy_thread( struct object *obj )
+ {
+     struct thread *thread = (struct thread *)obj;
++    set_error( STATUS_THREAD_IS_TERMINATING ); /* Maybe remove */
+     assert( obj->ops == &thread_ops );
+ 
+     assert( !thread->debug_ctx );  /* cannot still be debugging something */
+@@ -518,7 +520,7 @@
+     struct object *obj = get_ptid_entry( id );
+ 
+     if (obj && obj->ops == &thread_ops) return (struct thread *)grab_object( obj );
+-    set_error( STATUS_INVALID_CID );
++    set_error( STATUS_NO_LDT );
+     return NULL;
+ }
+ 
+@@ -538,6 +540,7 @@
+     {
+         if (thread->unix_tid == tid) return thread;
+     }
++    set_error( STATUS_NO_LDT );
+     return NULL;
+ }
+ 
+@@ -1077,41 +1080,23 @@
+ {
+     struct list *queue;
+ 
+-    if (thread && thread->state == TERMINATED && process)
+-        thread = NULL;
+-
+-    if (!thread)  /* find a suitable thread inside the process */
++    if (thread && thread->state == TERMINATED)
+     {
+-        struct thread *candidate;
+-
+-        /* first try to find a waiting thread */
+-        LIST_FOR_EACH_ENTRY( candidate, &process->thread_list, struct thread, proc_entry )
+-        {
+-            if (candidate->state == TERMINATED) continue;
+-            if (is_in_apc_wait( candidate ))
+-            {
+-                thread = candidate;
+-                break;
+-            }
+-        }
+-        if (!thread)
+-        {
+-            /* then use the first one that accepts a signal */
+-            LIST_FOR_EACH_ENTRY( candidate, &process->thread_list, struct thread, proc_entry )
+-            {
+-                if (send_thread_signal( candidate, SIGUSR1 ))
+-                {
+-                    thread = candidate;
+-                    break;
+-                }
+-            }
+-        }
+-        if (!thread) return 0;  /* nothing found */
+-        queue = get_apc_queue( thread, apc->call.type );
++        set_error( STATUS_THREAD_IS_TERMINATING );
++        return 0;
++    }
++    if (!thread)
++    {
++        set_error( STATUS_NO_LDT );
++        return 0;
+     }
+     else
+     {
+-        if (thread->state == TERMINATED) return 0;
++        if (thread->state == TERMINATED)
++        {
++            set_error( STATUS_THREAD_IS_TERMINATING );
++            return 0;
++        }
+         queue = get_apc_queue( thread, apc->call.type );
+         /* send signal for system APCs if needed */
+         if (queue == &thread->system_apc && list_empty( queue ) && !is_in_apc_wait( thread ))
+@@ -1251,7 +1236,11 @@
+ /* kill a thread on the spot */
+ void kill_thread( struct thread *thread, int violent_death )
+ {
+-    if (thread->state == TERMINATED) return;  /* already killed */
++    if (thread->state == TERMINATED)
++    {
++        set_error( STATUS_THREAD_IS_TERMINATING );
++        return;  /* already killed */
++    }
+     thread->state = TERMINATED;
+     thread->exit_time = current_time;
+     if (current == thread) current = NULL;
+@@ -1563,7 +1552,7 @@
+ 
+     if ((thread = get_thread_from_handle( req->handle, THREAD_SUSPEND_RESUME )))
+     {
+-        if (thread->state == TERMINATED) set_error( STATUS_ACCESS_DENIED );
++        if (thread->state == TERMINATED) set_error( STATUS_UNSUCCESSFUL );
+         else reply->count = suspend_thread( thread );
+         release_object( thread );
+     }
+@@ -1750,7 +1739,7 @@
+ 
+     if (thread)
+     {
+-        if (!queue_apc( NULL, thread, apc )) set_error( STATUS_THREAD_IS_TERMINATING );
++        queue_apc( NULL, thread, apc );
+         release_object( thread );
+     }
+     else if (process)

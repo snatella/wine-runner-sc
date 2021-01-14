@@ -1,0 +1,90 @@
+diff --git a/dlls/joy.cpl/joy.h b/dlls/joy.cpl/joy.h
+index ec7af4f787..672e8995e1 100644
+--- a/dlls/joy.cpl/joy.h
++++ b/dlls/joy.cpl/joy.h
+@@ -47,8 +47,8 @@ struct Joystick {
+     struct Effect *effects;
+ };
+ 
+-#define TEST_MAX_BUTTONS    32
+-#define TEST_MAX_AXES       4
++#define TEST_MAX_BUTTONS    64
++#define TEST_MAX_AXES       8
+ 
+ struct Graphics {
+     HWND hwnd;
+diff --git a/dlls/joy.cpl/main.c b/dlls/joy.cpl/main.c
+index 4ad9cf848c..35dba75978 100644
+--- a/dlls/joy.cpl/main.c
++++ b/dlls/joy.cpl/main.c
+@@ -414,6 +414,16 @@ static DWORD WINAPI input_thread(void *param)
+         axes_pos[1][1] = state.lRy;
+         axes_pos[2][0] = state.lZ;
+         axes_pos[2][1] = state.lRz;
++	axes_pos[3][0] = 0;
++	axes_pos[3][1] = 0;
++	axes_pos[4][0] = 0;
++	axes_pos[4][1] = 0;
++	axes_pos[5][0] = 0;
++	axes_pos[5][1] = 0;
++	axes_pos[6][0] = 0;
++	axes_pos[6][1] = 0;
++	axes_pos[7][0] = 0;
++	axes_pos[7][1] = 0;
+ 
+         /* Set pov values */
+         for (j = 0; j < ARRAY_SIZE(pov_val); j++)
+diff --git a/dlls/winebus.sys/bus_sdl.c b/dlls/winebus.sys/bus_sdl.c
+index 0560e4bb12..13d3377b03 100644
+--- a/dlls/winebus.sys/bus_sdl.c
++++ b/dlls/winebus.sys/bus_sdl.c
+@@ -402,10 +402,10 @@ static BOOL build_report_descriptor(struct platform_private *ext)
+     report_size = 0;
+ 
+     axis_count = pSDL_JoystickNumAxes(ext->sdl_joystick);
+-    if (axis_count > 6)
++    if (axis_count > 16)
+     {
+-        FIXME("Clamping joystick to 6 axis\n");
+-        axis_count = 6;
++        FIXME("Clamping joystick to 16 axis\n");
++        axis_count = 16;
+     }
+ 
+     ext->axis_start = report_size;
+@@ -421,9 +421,9 @@ static BOOL build_report_descriptor(struct platform_private *ext)
+     ext->ball_start = report_size;
+     if (ball_count)
+     {
+-        if ((ball_count*2) + axis_count > 9)
++        if ((ball_count*2) + axis_count > 19)
+         {
+-            FIXME("Capping ball + axis at 9\n");
++            FIXME("Capping ball + axis at 19\n");
+             ball_count = (9-axis_count)/2;
+         }
+         descript_size += sizeof(REPORT_AXIS_HEADER);
+diff --git a/dlls/winejoystick.drv/joystick_linux.c b/dlls/winejoystick.drv/joystick_linux.c
+index 8d1a7b1a25..e579d99aa7 100644
+--- a/dlls/winejoystick.drv/joystick_linux.c
++++ b/dlls/winejoystick.drv/joystick_linux.c
+@@ -260,9 +260,9 @@ LRESULT driver_joyGetDevCaps(DWORD_PTR dwDevID, LPJOYCAPSW lpCaps, DWORD dwSize)
+ 	lpCaps->wUmax = 0xFFFF;
+ 	lpCaps->wVmin = 0;
+ 	lpCaps->wVmax = 0xFFFF;
+-	lpCaps->wMaxAxes = 6; /* same as MS Joystick Driver */
++	lpCaps->wMaxAxes = 16; /* same as MS Joystick Driver */
+ 	lpCaps->wNumAxes = 0; /* nr of axes in use */
+-	lpCaps->wMaxButtons = 32; /* same as MS Joystick Driver */
++	lpCaps->wMaxButtons = 64; /* same as MS Joystick Driver */
+ 	lpCaps->szRegKey[0] = 0;
+ 	lpCaps->szOEMVxD[0] = 0;
+ 	lpCaps->wCaps = 0;
+@@ -326,6 +326,7 @@ LRESULT driver_joyGetPosEx(DWORD_PTR dwDevID, LPJOYINFOEX lpInfo)
+ 	    switch (jstck->axesMap[ev.number]) {
+ 	    case 0: /* X */
+ 	    case 8: /* Wheel */
++            case 40: /* Mouse-like */
+ 		jstck->x = ev.value;
+ 		break;
+ 	    case 1: /* Y */
